@@ -17,7 +17,16 @@ module.exports = {
                 const htmlString = responseDetail.response.body.toString();
                 const result = parserHandler.doParser(htmlString, RULE_NAME);
                 utils.log('爬取到的公众号历史文章列表......................' + JSON.stringify(result), config.LOG._LOG_LEVEL_INFO);
-                return null;
+                utils.log('进行数据替换......................', config.LOG._LOG_LEVEL_INFO);
+
+                const newResponse = responseDetail.response;
+                newResponse.body = htmlString + '--------------Hello Word!!!!';
+
+                return new Promise(((resolve, reject) => {
+                    setTimeout(() => {
+                        resolve({response:newResponse});
+                    })
+                }));
             } else {
                 return null;
             }
@@ -25,5 +34,22 @@ module.exports = {
             utils.log('Rule handler throw exception:' + e.message);
             return null;
         }
+    },
+
+    * beforeSendRequest(requestDetail){
+        if(/mp\/homepage\?__biz=/.test(requestDetail.url)){
+            utils.log('【进入beforeSendRequest-------------------】',config.LOG._LOG_LEVEL_INFO);
+            const newRequestOptions = requestDetail.requestOptions;
+
+            requestDetail.protocol = 'http';
+            newRequestOptions.hostname='127.0.0.1';
+            newRequestOptions.port='8002';
+            newRequestOptions.path='/';
+            newRequestOptions.method='GET';
+            return requestDetail;
+        }
+    },
+    * beforeDealHttpsRequest(requestDetail){
+        return true;
     }
 };
