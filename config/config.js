@@ -24,6 +24,20 @@ module.exports = {
             'Connection':'keep-alive'
         }
     },
+    DATA_CENTER:{
+        accessToken:'',
+        hostname:'127.0.0.1',              //Server address
+        port:80,
+        agent:false,
+        taskRspPath:'/commitTaskResult.do',//Submit crawler parsed data to the server
+        taskRspMethod:'POST',
+        taskRspHeaders:{
+            'Host':'127.0.0.1',
+            'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Encoding':'identity',
+            'Connection':'keep-alive'
+        }
+    },
     LOG:{
         level:_LOG_LEVEL_INFO,
         _LOG_LEVEL_NO_LOG:_LOG_LEVEL_NO_LOG,

@@ -17,7 +17,11 @@ try{
             content = appendText + content;
             content = eval('(function() {'+content+'; return data;})()');
             result.code = SUCCESS;
-            result.content = content;
+            
+            var msgList = content.appmsg_list;
+            
+            result.content = msgList;
+
         }
     });
 
