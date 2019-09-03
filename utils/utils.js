@@ -2,7 +2,9 @@ const config = require('../config/config');
 var http     = require('http');
 var https    = require('https');
 var domain   = require('domain');
-var url      = require("url");
+var URL      = require("url");
+var request  = require("request");
+var querystring = require("querystring");
 
 var _SOCK_TIME_OUT = 10000;
 
@@ -481,6 +483,26 @@ function httpsGet(url, errorCallback, successCallBack){
     });
 }
 
+function httpsPost(options,errback,successback) {
+    request(options, function(error, response, body) {
+        if (!error && response.statusCode === 200) {
+            successback(response,body);
+        }else{
+            errback(error);
+        }
+    });
+}
+
+/**
+ * 解析url中的参数
+ * @param url 原始url
+ * @returns {ParsedUrlQuery} 参数对象
+ */
+function parserUrlParams(url) {
+    let arg = URL.parse(url).query;
+    return querystring.parse(arg);
+}
+
 
 function moduleLog(lg, level){
     log('<Utils>' + lg, level);
@@ -494,3 +516,5 @@ exports.httpsRequest_GET  = httpsRequest_GET;
 exports.httpRequest       = httpRequest;
 exports.httpsGet          = httpsGet;
 exports.httpGet           = httpGet;
+exports.httpsPost         = httpsPost;
+exports.parserUrlParams   = parserUrlParams;

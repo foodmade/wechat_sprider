@@ -9,17 +9,6 @@ var work   = require('../utils/work');
 
 var RULE_NAME = 'article_list';
 
-
-var testJSON = {
-    url:"https://mp.weixin.qq.com/mp/getappmsgext?f=json&mock=&uin=777&key=777&pass_ticket=OEhyH0CvFdeOhuJ%25252FTn10exJLWvAH1pHaSy0PtIPFbMWAYr4uKQFRdmKnDjGJbRro"+
-    "&wxtoken=777&devicetype=iOS12.3.1&clientversion=17000529&appmsg_token=1024_WBD3AVqloeRyY5LgTHPvfWWNqZkG60uqt3gwaoV5Xb7iNimAIJfzl380A0iMfYwJDjDa7kFT66U9AdKw&x5=0&f=json",
-    headers:{
-        'Host' :'mp.weixin.qq.com',
-        'Accept' :'*/*',
-        'Cookie' :''
-    }
-} 
-
 const userInfo = {};
 
 /**
@@ -35,27 +24,40 @@ function getNotification () {
  */
 function parserUserBaseInfo(requestDetail){
     utils.log('【Start parser user info】',config.LOG._LOG_LEVEL_DEBUG);
-    //解析原始请求的Cookie
+    const cookies = requestDetail.requestOptions.headers.Cookie;
+    //从cookies中解析我们想要的数据
+    parserByCookie(cookies);
+
+    //从url中解析需要的数据
+    parserByUrl(requestDetail.url);
+
+    utils.log('【The user cookies parser success】')
+    utils.log('【UserInfo:】' + JSON.stringify(userInfo),config.LOG._LOG_LEVEL_INFO);
+}
+
+function parserByUrl(url) {
+    let paramsObj = utils.parserUrlParams(url);
+    userInfo.biz = paramsObj.__biz.replace('==','');
+    userInfo.sn  = paramsObj.sn;
+}
+
+function parserByCookie(cookies){
     try{
-        const cookies = requestDetail.requestOptions.headers.Cookie;
+        //解析原始请求的Cookie
         const cookieArray = cookies.split(';');
-    
+
         for (let i = 0; i < cookieArray.length; i++) {
-            
+
             const cookieColunm = cookieArray[i];
             const cookieKV = cookieColunm.split('=');
             if(cookieKV.length > 1){
                 userInfo[cookieKV[0].trim()] = cookieKV[1];
             }
         }
-
-    
     }catch(e){
         utils.log('【Parser user info fail】:' + e.message,config.LOG._LOG_LEVEL_ERROR);
         return;
     }
-    utils.log('【The user cookies parser success】')
-    utils.log('【UserInfo:】' + JSON.stringify(userInfo),config.LOG._LOG_LEVEL_INFO);
 }
   
 
@@ -75,7 +77,7 @@ module.exports = {
                 parserUserBaseInfo(requestDetail);
 
                 //发送数据到服务器端
-                work.postArticleList(result,function(data){
+                work.postArticleList(result.content,function(data){
                     utils.log('【Do commit data success. Prepare for the next step 】',config.LOG._LOG_LEVEL_ERROR);
                     //组装获取文章详情的url,自主请求
                     work.fetchArticleDetailInfo(data,userInfo);
@@ -86,8 +88,7 @@ module.exports = {
                
                 //解析appmsg_token
                 var appmsg_token_pattern = /window.appmsg_token = \"(.*?)\";/;
-                var appmsg_token = appmsg_token_pattern.exec(htmlString)[1];
-                userInfo.msgToken = appmsg_token;
+                userInfo.msgToken = appmsg_token_pattern.exec(htmlString)[1];
 
                 const newResponse = responseDetail.response;
                 newResponse.body = htmlString +  getNotification();
@@ -97,6 +98,7 @@ module.exports = {
                         resolve({response:newResponse});
                     })
                 }));
+                // return null;
             } else {
                 return null;
             }
@@ -110,11 +112,11 @@ module.exports = {
      * 请求前的拦截操作
      * @param {请求实体} requestDetail 
      */
-    * beforeSendRequest(requestDetail){
-        
-    },
-
-    * beforeDealHttpsRequest(requestDetail){
-        return true;
-    }
+    // * beforeSendRequest(requestDetail){
+    //
+    // },
+    //
+    // * beforeDealHttpsRequest(requestDetail){
+    //     return true;
+    // }
 };
