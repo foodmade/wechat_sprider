@@ -1,5 +1,7 @@
 var SUCCESS = 1;
-var FAIL = -1;
+var FAIL    = -1;
+var INDEX   = 0;
+var VER     = '1.0.0';
 
 function log(log){
     utils.log('{DParser wechat:history article list: ' + log);
@@ -28,6 +30,9 @@ try{
     if(result.content === undefined || result.content === '' || result.content === null){
         result.code = FAIL;
     }
+
+    parserInfo.ver = VER;
+    parserInfo.index = INDEX;
 
 
 }catch(exp){
