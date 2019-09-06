@@ -3,19 +3,21 @@
 
 #快速启动
 #### 1 依赖安装
-```basj
+```bash
 npm install
 ```
-#### 2 生成证书
+#### 2 生成anyproxy证书
+- 进入项目根目录
 ```bash
+cd node_modules/anyproxy/bin/
 node anyproxu-ca
 ```
 #### 3 启动
 ```bash
 node index.js
 ```
-#### 4 证书下载,安装
-```basj
+#### 4 证书下载,安装  **(手机和电脑要在同一局域网下)**
+```bash
 手机浏览器访问:http://ip:8002/,点击RootCA > download。然后进行证书安装
 ```
 `如果是IOS>=10.3系统,设置->通用->关于本机->证书信任设置 中把AnyProxy证书的开关打开`
