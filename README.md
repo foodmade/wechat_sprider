@@ -13,7 +13,7 @@ cd node_modules/anyproxy/bin/
 node anyproxu-ca
 ```
 #### 3 启动
-```
+```bash
 Book-Air:wechat_sprider chen$ node index.js 
 [AnyProxy Log][2019-09-06 23:58:21]: throttle :10000kb/s
 [2019-09-06 23:58:21 <lvl:4> ]<Parser handler> Load [article_list] success
