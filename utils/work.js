@@ -2,8 +2,9 @@
 const utils  = require('./utils');
 const config = require('../config/config');
 var   URL    = require("url");
+var   db    =  require("../db/db");
 
-var likeUrl = 'https://mp.weixin.qq.com/mp/getappmsgext?f=json&mock=&uin=777&key=777&pass_ticket=PASS_TICKET&wxtoken=777&devicetype=DEVICETYPE&clientversion=17000529&appmsg_token=MSG_TOKEN&x5=0&f=json';
+var likeUrl = 'https://mp.weixin.qq.com/mp/getappmsgext?f=json&mock=&uin=777&key=777&pass_ticket=PASS_TICKET&wxtoken=777&devicetype=DEVICETYPE&clientversion=17000529&__biz=BIZ&appmsg_token=MSG_TOKEN&x5=0&f=json';
 
 /**
  * 提交文章列表数据到服务器
@@ -45,7 +46,41 @@ function postArticleList(result,success,errback){
             }
         }
     );
+}
 
+function saveArticles(items,userInfo,callback,errback) {
+
+    if(!items){
+        errback('<No data !!!>');
+        return;
+    }
+
+    const insertArticleSql = 'REPLACE INTO wechat_article (article_title,aid,cover,link,digest,appmsgid,type,copyright_stat,author,sendtime)' +
+        'VALUES (?,?,?,?,?,?,?,?,?,?)';
+
+    var item;
+    for (var i=0; i<items.length; i++) {
+         var params = [];
+         item = items[i];
+         params.push(item.title);
+         params.push(item.aid);
+         params.push(item.cover);
+         params.push(item.link);
+         params.push(item.digest);
+         params.push(item.appmsgid);
+         params.push(item.type);
+         params.push(item.copyright_stat);
+         params.push(item.author);
+         params.push(item.sendtime);
+         db._INSTALL().exec_sp(insertArticleSql,params,item, (msg,data) => {
+             utils.log('<Article insert success::>' + msg,config.LOG._LOG_LEVEL_INFO);
+             fetchArticleDetailInfoAndSave(data,userInfo);
+         }, (err) => {
+             utils.log('<Article insert fail::>' + err,config.LOG._LOG_LEVEL_INFO);
+         })
+    }
+    utils.log('Insert '+items.length+' article to mysql successfully***********************',config.LOG._LOG_LEVEL_INFO);
+    callback(items);
 }
 
 /**
@@ -55,7 +90,7 @@ function postArticleList(result,success,errback){
  * 
  * 需要组装的字段[pass_ticket,devicetype,clientversion,appmsg_token,__biz,sn,title,]
  */
-function fetchArticleDetailInfo(data,userInfo){
+function fetchArticleDetailInfoAndSave(data,userInfo){
     utils.log('【Start assembling to get the url that the article likes】',config.LOG._LOG_LEVEL_DEBUG);
     utils.log('【The length of the data to be parsed】:' + data.length,config.LOG._LOG_LEVEL_DEBUG);
 
@@ -70,10 +105,9 @@ function fetchArticleDetailInfo(data,userInfo){
         '&pass_ticket=PASS_TICKET&is_temp_url=0&item_show_type=0&tmp_version=1&more_read_type=0' +
         '&appmsg_like_type=2&related_video_sn=&vid=';
 
-    for (let i=0; i<data.length; i++){
 
-        let msgid = data[i].appmsgid;
-        let sn = parserSign(data[i].link);
+        let msgid = data.appmsgid;
+        let sn = parserSign(data.link);
 
         let newPostdata = basePostdata;
         newPostdata = newPostdata.replace('BIZ',userInfo.biz);
@@ -86,14 +120,39 @@ function fetchArticleDetailInfo(data,userInfo){
 
         options.body = JSON.stringify(body);
 
-        utils.log('【Send post options:】'+ JSON.stringify(options),config.LOG._LOG_LEVEL_INFO);
+        utils.log('【Send post options:】'+ JSON.stringify(options),config.LOG._LOG_LEVEL_DEBUG);
 
-        utils.httpsPost(options,function(msg){
+        utils.httpsPost(options,(msg) => {
             utils.log('【Do Request like interface fail】 ' + JSON.stringify(msg),config.LOG._LOG_LEVEL_ERROR);
         },function(rsp,rspData){
-            utils.log('【Do Request like interface success】 ' + JSON.stringify(rspData),config.LOG._LOG_LEVEL_INFO);
+            saveLikeInfo(rspData,msgid);
         });
+}
+
+function saveLikeInfo(data, msgId) {
+
+    utils.log('<【Do Request like interface success】>' + data + "msgId:" + msgId,config.LOG._LOG_LEVEL_INFO);
+
+    var insertLinkSql = "UPDATE wechat_article SET like_num=? ,read_num=?,comment_num=? WHERE appmsgid=" + msgId;
+
+    data = JSON.parse(data);
+
+    const msgdata = data.appmsgstat;
+    if(!msgdata){
+        return;
     }
+
+    var params = [];
+    params.push(msgdata.like_num);
+    params.push(msgdata.read_num);
+    params.push(data.comment_count);
+
+    db._INSTALL().exec_sp(insertLinkSql,params,{},function (result,data) {
+        utils.log('<Update article like more info successfully:: msgId = >' + msgId,config.LOG._LOG_LEVEL_INFO);
+    },function (err) {
+        utils.log('<Update article like more info fail:: msgId = >' + msgId + ' errInfo:' + err,config.LOG._LOG_LEVEL_INFO);
+    });
+
 }
 
 function parserSign(link) {
@@ -116,6 +175,7 @@ function assemblyOptions(userInfo){
     newUrl = newUrl.replace('PASS_TICKET',userInfo.pass_ticket);
     newUrl = newUrl.replace('DEVICETYPE',userInfo.devicetype);
     newUrl = newUrl.replace('MSG_TOKEN',userInfo.msgToken);
+    newUrl = newUrl.replace('BIZ',userInfo.biz);
 
     let urlObj = URL.parse(newUrl);
 
@@ -150,5 +210,6 @@ function assemblyOptions(userInfo){
     };
 }
 
-exports.postArticleList        = postArticleList;
-exports.fetchArticleDetailInfo = fetchArticleDetailInfo;
+exports.postArticleList               = postArticleList;
+exports.fetchArticleDetailInfoAndSave = fetchArticleDetailInfoAndSave;
+exports.saveArticles                  = saveArticles;

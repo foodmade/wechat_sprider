@@ -38,6 +38,13 @@ module.exports = {
             'Connection':'keep-alive'
         }
     },
+    DB_CONFIG:{
+        host:'localhost',
+        port:3306,
+        username:"root",
+        password:'chen19960119',
+        database:'crawler'
+    },
     LOG:{
         level:_LOG_LEVEL_INFO,
         _LOG_LEVEL_NO_LOG:_LOG_LEVEL_NO_LOG,

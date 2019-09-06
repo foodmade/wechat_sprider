@@ -5,9 +5,14 @@ const rule = require('./rule/rule_custom');
 //config文件
 const config = require('./config/config');
 const parserhandler = require('./parser_handler');
+//mysql
+const db = require('./db/db');
 
 function init() {
+    //Crawler parser handler init load
     parserhandler.initParser(config.PARSER_MAPPER);
+    //Mysql connection init load
+    db._INSTALL();
 }
 
 const options = {
